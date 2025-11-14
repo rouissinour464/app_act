@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestion des Étudiants</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { color: #333; margin-bottom: 16px; }
+    form { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 20px; }
+    input, button { padding: 10px; border-radius: 6px; border: 1px solid #bbb; font-size: 14px; }
+    button { cursor: pointer; }
+    button.primary { background: #1976d2; color: #fff; border-color: #1976d2; }
+    button.danger { background: #d32f2f; color: #fff; border-color: #d32f2f; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #ddd; padding: 10px; text-align: left; }
+    th { background: #f7f7f7; }
+    .row-actions { display: flex; gap: 6px; }
+    .alert { background: #ffebee; color: #c62828; padding: 10px; border-radius: 6px; margin-bottom: 12px; display: none; }
+    .ok { background: #e8f5e9; color: #1b5e20; }
+  </style>
+</head>
+<body>
+  <h1>Gestion des Étudiants</h1>
+
+  <div id="alert" class="alert"></div>
+
+  <!-- Formulaire d'ajout -->
+  <form id="studentForm" autocomplete="on">
+    <input type="text" id="nom" placeholder="Nom" required />
+    <input type="text" id="prenom" placeholder="Prénom" required />
+    <input type="email" id="email" placeholder="Email" required />
+    <input type="text" id="filiere" placeholder="Filière" />
+    <input type="number" id="age" placeholder="Âge" min="15" max="120" />
+    <button type="submit" class="primary">Ajouter</button>
+  </form>
+
+  <!-- Liste -->
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th><th>Nom</th><th>Prénom</th><th>Email</th><th>Filière</th><th>Âge</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="studentList"></tbody>
+  </table>
+
+  <script>
+    const API_URL = '/api/etudiants';
+    const $alert = document.getElementById('alert');
+
+    function showAlert(message, ok = false) {
+      $alert.textContent = message;
+      $alert.className = ok ? 'alert ok' : 'alert';
+      $alert.style.display = 'block';
+      setTimeout(() => { $alert.style.display = 'none'; }, 3000);
+    }
+
+    async function fetchJSON(url, options) {
+      const res = await fetch(url, options);
+      if (!res.ok) {
+        let msg = 'Erreur ' + res.status;
+        try {
+          const body = await res.json();
+          if (body?.message) msg = body.message;
+        } catch (_) { /* ignore */ }
+        throw new Error(msg);
+      }
+      if (res.status === 204) return null;
+      return res.json();
+    }
+
+    async function loadStudents() {
+      try {
+        const data = await fetchJSON(API_URL);
+        const tbody = document.getElementById('studentList');
+        tbody.innerHTML = '';
+        if (!data || data.length === 0) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td colspan="7">Aucun étudiant.</td>`;
+          tbody.appendChild(tr);
+          return;
+        }
+        data.forEach(e => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${e.id}</td>
+            <td>${e.nom}</td>
+            <td>${e.prenom}</td>
+            <td>${e.email}</td>
+            <td>${e.filiere ?? '-'}</td>
+            <td>${e.age ?? '-'}</td>
+            <td class="row-actions">
+              <button class="danger" data-del="${e.id}">Supprimer</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        showAlert(err.message || 'Erreur lors du chargement');
+      }
+    }
+
+    async function addStudent(student) {
+      return fetchJSON(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(student)
+      });
+    }
+
+    async function deleteStudent(id) {
+      await fetchJSON(`${API_URL}/${id}`, { method: 'DELETE' });
+    }
+
+    // Soumission du formulaire d’ajout
+    document.getElementById('studentForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const student = {
+        nom: document.getElementById('nom').value.trim(),
+        prenom: document.getElementById('prenom').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        filiere: document.getElementById('filiere').value.trim() || null,
+        age: document.getElementById('age').value ? parseInt(document.getElementById('age').value, 10) : null
+      };
+      if (!student.nom || !student.prenom || !student.email) {
+        showAlert('Nom, prénom et email sont obligatoires'); return;
+      }
+      try {
+        await addStudent(student);
+        e.target.reset();
+        showAlert('Étudiant ajouté avec succès', true);
+        await loadStudents();
+      } catch (err) {
+        showAlert(err.message || 'Erreur lors de l’ajout');
+      }
+    });
+
+    // Gestion des clics Supprimer (délégation)
+    document.getElementById('studentList').addEventListener('click', async (e) => {
+      const id = e.target?.dataset?.del;
+      if (!id) return;
+      if (!confirm(`Supprimer l’étudiant #${id} ?`)) return;
+      try {
+        await deleteStudent(id);
+        showAlert('Étudiant supprimé', true);
+        await loadStudents();
+      } catch (err) {
+        showAlert(err.message || 'Erreur lors de la suppression');
+      }
+    });
+
+    // Premier chargement
+    loadStudents();
+  </script>
+</body>
