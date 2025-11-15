@@ -1,9 +1,6 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:15
-    container_name: postgres_etudiants
     environment:
       POSTGRES_DB: gestion_etudiants
       POSTGRES_USER: nour
@@ -17,7 +14,6 @@ services:
 
   app:
     image: nour292/gestion-etudiants:v1.0
-    container_name: etudiants_app
     depends_on:
       - db
     ports:
@@ -30,8 +26,3 @@ services:
     networks:
       - etudiants-network
 
-volumes:
-  pgdata:
-
-networks:
-  etudiants-network:

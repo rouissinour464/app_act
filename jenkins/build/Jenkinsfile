@@ -1,74 +1,3 @@
-pipeline {
-    agent any
-
-    environment {
-        IMAGE_NAME = "nour292/gestion-etudiants"
-        TAG = "v1.0"
-    }
-
-    stages {
-
-        stage('Checkout') {
-            steps {
-                echo "Récupération du code depuis GitHub via SSH"
-                git branch: 'main',
-                    credentialsId: 'github-ssh-rsa',
-                    url: 'git@github.com:rouissinour464/app_act.git'
-            }
-        }
-
-        stage('Docker Compose Up') {
-            steps {
-                echo "Démarrage de PostgreSQL pour les tests d'intégration"
-                sh '''
-                    docker-compose down -v || true
-                    docker-compose up -d --build
-                '''
-            }
-        }
-
-        stage('Tests') {
-            steps {
-                echo "Exécution des tests unitaires et d'intégration"
-                sh './mvnw clean test'
-            }
-            post {
-                always {
-                    junit '**/target/surefire-reports/*.xml'
-                }
-            }
-        }
-
-        stage('Docker Build') {
-            steps {
-                echo "Construction de l’image Docker"
-                sh '''
-                    docker build -t ${IMAGE_NAME}:${TAG} .
-                    docker tag ${IMAGE_NAME}:${TAG} ${IMAGE_NAME}:latest
-                '''
-            }
-        }
-
-        stage('Docker Run') {
-            steps {
-                echo "Lancement du conteneur Docker"
-                sh '''
-                    docker rm -f etudiants || true
-
-                    docker run -d --name etudiants \
-                    -p 8081:8081 \
-                    -e SERVER_PORT=8081 \
-                    -e SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/gestion_etudiants \
-                    -e SPRING_DATASOURCE_USERNAME=nour \
-                    -e SPRING_DATASOURCE_PASSWORD=actpass \
-                    ${IMAGE_NAME}:${TAG}
-                '''
-            }
-        }
-
-        stage('Docker Push') {
-            steps {
-                echo "Push de l’image Docker vers Docker Hub"
 
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-creds',
@@ -76,7 +5,7 @@ pipeline {
                     passwordVariable: 'PASS'
                 )]) {
                     sh '''
-                        echo "$PASS" | docker login -u "$USER" --password-stdin
+                        echo "$PASS" | docker login -u "$USER" --password-std>
                         docker push ${IMAGE_NAME}:${TAG}
                         docker push ${IMAGE_NAME}:latest
                     '''
@@ -90,6 +19,16 @@ pipeline {
                 sh 'docker-compose down -v'
             }
         }
+        stage('Docker Compose Up') {
+            steps {
+                echo "Démarrage de PostgreSQL pour les tests d'intégration"
+                sh '''
+                    docker-compose down -v --remove-orphans || true
+                    docker-compose up -d --build
+                '''
+    }
+}
+
     }
 }
 
