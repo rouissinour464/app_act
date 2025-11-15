@@ -16,7 +16,7 @@ pipeline {
                 echo 'Récupération du code depuis GitHub via SSH'
                 git branch: 'main',
                     url: 'git@github.com:rouissinour464/app_act.git',
-                    credentialsId: 'github-ssh'
+                    credentialsId: 'github-ssh-rsa'
             }
         }
 
