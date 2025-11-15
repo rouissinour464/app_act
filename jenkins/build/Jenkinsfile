@@ -1,0 +1,68 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKERHUB_CREDENTIALS = 'dockerhub-creds' // Mets ici l'ID de tes credentials Jenkins pour Docker Hub
+        DOCKER_IMAGE = "nour292/gestion-etudiants"
+        DOCKER_TAG = "v1.0"
+        CONTAINER_NAME = "etudiants"
+        SERVER_PORT = "8081"
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                echo 'Récupération du code depuis GitHub'
+                git branch: 'main', url: 'https://github.com/rouissinour464/app_act.git'
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                echo 'Construction de l’image Docker'
+                sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
+                sh "docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest"
+            }
+        }
+
+        stage('Docker Run') {
+            steps {
+                echo 'Lancement du conteneur Docker'
+                // Stoppe et supprime le conteneur s'il existe déjà
+                sh "docker rm -f ${CONTAINER_NAME} || true"
+                sh """
+                    docker run -d --name ${CONTAINER_NAME} \
+                    -p ${SERVER_PORT}:${SERVER_PORT} \
+                    --env SERVER_PORT=${SERVER_PORT} \
+                    --env SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/gestion_etudiants \
+                    --env SPRING_DATASOURCE_USERNAME=nour \
+                    --env SPRING_DATASOURCE_PASSWORD=actpass \
+                    ${DOCKER_IMAGE}:${DOCKER_TAG}
+                """
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+                echo 'Push de l’image Docker vers Docker Hub'
+                withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS}", 
+                                                  usernameVariable: 'DOCKER_USER', 
+                                                  passwordVariable: 'DOCKER_PASS')]) {
+                    sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
+                    sh "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                    sh "docker push ${DOCKER_IMAGE}:latest"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline terminé avec succès !'
+        }
+        failure {
+            echo 'Erreur lors de l’exécution du pipeline.'
+        }
+    }
+}
