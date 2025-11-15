@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: postgres_etudiants
+    environment:
+      POSTGRES_DB: gestion_etudiants
+      POSTGRES_USER: nour
+      POSTGRES_PASSWORD: actpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - etudiants-network
+
+  app:
+    image: nour292/gestion-etudiants:v1.0
+    container_name: etudiants_app
+    depends_on:
+      - db
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/gestion_etudiants
+      SPRING_DATASOURCE_USERNAME: nour
+      SPRING_DATASOURCE_PASSWORD: actpass
+      SERVER_PORT: 8081
+    networks:
+      - etudiants-network
+
+volumes:
+  pgdata:
+
+networks:
+  etudiants-network:

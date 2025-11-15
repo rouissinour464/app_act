@@ -17,6 +17,28 @@ pipeline {
             }
         }
 
+        stage('Docker Compose Up') {
+            steps {
+                echo "Démarrage de PostgreSQL pour les tests d'intégration"
+                sh '''
+                    docker-compose down -v || true
+                    docker-compose up -d --build
+                '''
+            }
+        }
+
+        stage('Tests') {
+            steps {
+                echo "Exécution des tests unitaires et d'intégration"
+                sh './mvnw clean test'
+            }
+            post {
+                always {
+                    junit '**/target/surefire-reports/*.xml'
+                }
+            }
+        }
+
         stage('Docker Build') {
             steps {
                 echo "Construction de l’image Docker"
@@ -49,7 +71,7 @@ pipeline {
                 echo "Push de l’image Docker vers Docker Hub"
 
                 withCredentials([usernamePassword(
-                    credentialsId: 'docker-hub',
+                    credentialsId: 'dockerhub-creds',
                     usernameVariable: 'USER',
                     passwordVariable: 'PASS'
                 )]) {
@@ -59,6 +81,13 @@ pipeline {
                         docker push ${IMAGE_NAME}:latest
                     '''
                 }
+            }
+        }
+
+        stage('Docker Compose Down') {
+            steps {
+                echo "Arrêt et nettoyage des conteneurs Docker Compose"
+                sh 'docker-compose down -v'
             }
         }
     }
