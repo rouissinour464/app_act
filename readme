@@ -1,0 +1,70 @@
+Activités d'intégration de compétences
+Activité 1 : Création de rôles Ansible avec Ansible Galaxy
+README.md – Activité 1 : Création de rôles Ansible avec Ansible Galaxy
+📘 1. Description de l’activité
+
+Cette activité consiste à automatiser l’installation et la configuration de plusieurs outils essentiels à un environnement DevOps à l'aide de rôles Ansible.
+L’objectif est de créer quatre rôles indépendants, réutilisables et bien structurés via Ansible Galaxy :
+
+java-install → Installation de Java JDK
+
+docker-install → Installation et configuration de Docker
+
+kubectl-install → Installation de kubectl
+
+jenkins-install → Installation et configuration de Jenkins
+
+Chaque rôle contient :
+
+un fichier tasks/main.yml
+
+un fichier defaults/main.yml si nécessaire
+
+un fichier README.md
+
+une structure complète générée par ansible-galaxy init
+
+Cette activité permet de pratiquer la modularisation, la réutilisabilité et la standardisation des configurations.
+Activité 2 : Création d’un pipeline CI/CD sécurisé pour une
+application Spring Boot avec Jenkins
+# Projet CI/CD Spring Boot - Gestion des Étudiants
+
+## 📌 Description du projet
+Ce projet a pour objectif de mettre en œuvre un **pipeline CI/CD sécurisé** pour une application **Spring Boot** de gestion des étudiants.  
+L’application fournit une **API REST** pour gérer les étudiants avec les opérations **CRUD** (Create, Read, Update, Delete) et est intégrée avec **Docker, Jenkins, SonarQube, Trivy, ArgoCD, Prometheus et Grafana** pour assurer automatisation, sécurité et monitoring.
+
+---
+
+## 🛠 Technologies utilisées
+- **Spring Boot** pour l’API REST
+- **Spring Data JPA** pour l’accès à PostgreSQL
+- **PostgreSQL** comme base de données
+- **Maven** pour le build
+- **JUnit / Mockito** pour les tests
+- **Docker** pour la containerisation
+- **Jenkins** pour le pipeline CI/CD
+- **SonarQube & Trivy** pour l’analyse qualité et sécurité
+- **ArgoCD** pour le déploiement GitOps
+- **Prometheus & Grafana** pour le monitoring
+- **Slack** pour les notifications
+
+---
+
+## 🧩 Étapes de mise en œuvre du pipeline
+
+### 1️⃣ Build & Docker
+- Récupération du code depuis GitHub.
+- Compilation Maven et création du fichier JAR.
+- Création de l’image Docker avec versioning (`v1.0`, `latest`).
+- Push de l’image sur Docker Hub.
+
+**Commandes utilisées :**
+```bash
+git clone https://github.com/username/gestion-etudiants.git
+cd gestion-etudiants
+mvn clean package -DskipTests
+docker build -t username/gestion-etudiants:latest .
+docker tag username/gestion-etudiants:latest username/gestion-etudiants:v1.0
+docker push username/gestion-etudiants:latest
+docker push username/gestion-etudiants:v1.0
+
